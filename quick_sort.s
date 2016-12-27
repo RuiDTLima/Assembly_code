@@ -136,9 +136,9 @@ memswap:
 	mov   %rdx,		 %rbx
 	
 	/*=========colocar o %rsp num endereço multiplo de 16===========*/
-	subq  $24,       %rsp
+	subq  $8,        %rsp
 	leaq  15(%rdx),  %rax
-	andq  $-16,      %rax
+	andq  $16,       %rax
 	subq  %rax,      %rsp      #localiza o tmp
 	
 	/*=========memcpy(tmp,one,size)===============*/
