@@ -1,120 +1,117 @@
-.globl   quick_sort
+.globl quick_sort
 
 /**
 	Arguments and Labels:
-	*base is passed in %rdi and held in %r12
-	nel is passed in %rsi 
+	*base is passed in %rdi and held in %r15
+	nel is passed in %rsi
 	width is passed in %rdx and held in %rbp
-	*compar is passed in %rcx and held in %r13
-	*last is held in %r10
-	*right is held in %r14
-	*left is held in %r15
+	*compar is passed in %rcx and held in %rbx
+	*last is held in %r14
+	*right is held in %r12
+	*left is held in %r13
 **/
 
 .text
 
 quick_sort:
-
 /*==============salvaguarda de registos======================*/
-push  %rbp			# save previous value in %rbp
-push  %r12			# save previous value in %r12
-push  %r13			# save previous value in %r13
-push  %r14			# save previous value in %r14
-push  %r15			# save previous value in %r15
-movq  %rdx, %rbp	# %rbp = %rdx			//%rbp = width
-movq  %rdi, %r12	# %r12 = %rdi			//%r12 = *base
-movq  %rcx, %r13	# %r13 = %rcx			//%r13 = *compar
-movq  %rsi, %r10	# %r10 = %rsi			//%r10 = nel
+push  %r12
+push  %r13
+push  %r14
+push  %r15
+push  %rbp
+push  %rbx
+mov   %rsi, %r14	# %r14 = %rsi			//%r14=nel	
+mov   %rdi, %r15	# %r15 = %rdi			//%r15=*base
+mov   %rdx, %rbp	# %rbp = %rdx			//%rbp=width
+mov   %rcx, %rbx	# %rbx = %rcx			//%r10=*compar
 
-/*=============preparação de ponteiros======================*/
-decq  %r10			# %r10 = %r10 - 1		//nel-1
-imulq %rdx, %r10	# %r10 = %r10 * %rdx    //width*(nel-1)
-addq  %rdi, %r10	# %r10 = %r10 + %rdi	//*last = base + width*(nel-1)
-movq  %r10, %r14	# %r14 = %r10			//*right = last
-movq  %rdx, %r15	# %r15 = %rdx			//*left = width
-addq  %rdi, %r15	# %r15 = %r15 + %rdi	//*left = width + base
+decq  %r14			# %r14 = %r14 - 1		//nel-1		
+imulq %rdx, %r14	# %r14 = %r14 * %rdx	//width*(nel-1)
+addq  %rdi, %r14	# %r14 = %rdi + %r14	//*last=base+width*(nel-1)
+movq  %r14, %r12	# %r12 = %r14			//*rigth=last
+movq  %rdx, %r13	# %r13 = %rdx			
+addq  %rdi, %r13	# %r13 = %r13 + %di		//*left=base+width
 
-/*=============do while====================================*/
-while1:
+while:
+	while1:
+		cmpq %r12, %r13		# %r13 - %r12			//left-right
+		jg   while2
+		mov  %r13, %rdi		# %rdi = %r13			//%rdi=left
+		mov  %r15, %rsi		# %rsi = %r15			//%rsi=base
+		call *%rbx			# call *compar
+		cmpl $0,%eax
+		jg   while2
+		add  %rbp, %r13		# %r13 = %r13 + %rbp	//left+=width
+		jmp  while1
 	
 	while2:
-		cmpq  %r14, %r15		# %r15 - %r14			//left - right
-		jg    while3
-		movq  %rdi, %rsi		# %rsi = %rdi			//%rsi = *base
-		movq  %r15, %rdi		# %rdi = %r15			//%rdi = *left
-		call  *%rcx
-		testl %eax,   %eax
-		jg    fim_while2
-		addq  %rbp, %r15		# %r15 = %r15 + %rdx	//left+=width
-		movq  %r12, %rdi		# %rdi = %r12
-		jmp   while2
-		
-	fim_while2:
-		movq %r12, %rdi		# %rdi = %r12
-		
-	while3:
-		cmpq  %r15, %r14		# %r14 - %r15			//right-left
-		jl    if
-		movq  %rdi, %rsi		# %rsi = %rdi			//%rsi = *base
-		movq  %r14, %rdi		# %rdi = %r14			//%rdi = *right
-		call  *%rcx
-		testl %eax,   %eax
-		js    if
-		subq  %rdx, %r14		# %r14 = %r14 - %rdx	//right-=width
-		movq  %r12, %rdi		# %rdi = %r12
-		jmp   while3
+		cmpq %r13, %r12		# %r12 - %13			//right-left
+		jb   if
+		mov  %r12, %rdi		# %rdi = %r12			//%rdi=right
+		mov  %r15, %rsi		# %rsi = %r15			//%rsi=base
+		call *%rbx			# call *compar
+		cmpl $0,%eax
+		jl   if
+		sub  %rbp, %r12		# %r12 = %r12 - %rbp	//right-=width
+		jmp  while1
 	
-	if:	
-		cmpq %r15, %r14		# %r14 - %r15		//right-left
-		jl   fim_while1
-		
-	movq %r15, %rdi		# %rdi = %r15		//%rdi= *left
-	movq %r14, %rsi		# %rsi = %r14		//%rsi= *right
+	if:
+		cmp %r13, %r12		# %r12 - %r13			//right-left
+		jl fim_while
+	
+	mov %r13, %rdi		# %rdi = %r13		//%rdi=left
+	mov %r12, %rsi		# %rsi = %r12		//%rsi=right
+	mov %rbp, %rdx		# %rdx = %rbp		//%rdx=width
 	call memswap
-	movq %rbp, %rdx		# %rdx = %rbp		//%rdx= width
 	jmp while1
-	
-fim_while1:
 
-/*===============recursividade============================*/
-movq %r12, %rdi		# %rdi = %r12			//%rdi= *base
-movq %r14, %rsi		# %rsi = %r14			//%rsi= *right
+fim_while:
+
+mov  %r15, %rdi		# %rdi = %r15			//%rdi=base
+mov  %r12, %rsi		# %rsi = %r12			//%rsi=right
+mov  %rbp, %rdx		# %rdx = %rbp			//%rdx=width
 call memswap
-movq %r12, %rdi		# %rdi = %r12			//%rdi= *base
-cmpq %rdi, %r14		# %r14 - %rdi			//right-base
-jle  secondIf
-movq %r14, %rax		# %rax = %r14			//%rax=right
-subq %rdi, %rax		# %rax = %rax - %rdi	//right-base
-movq $0,   %rdx	
-div  %rbp
-movq %rax, %rsi		# %rsi = %rax			//%rsi = (right-base)/width
-movq %rbp, %rdx		# %rdx = %rbp			//%rdx = width
-movq %r13, %rcx		# %rcx = %r13			//%rcx = compar
+
+cmp  %r15, %r12		# %r12 - %r15			//right-base
+jle   second_if
+mov  %rbp, %rcx
+mov  %r12, %rax		# %rax = %r12			//%rax=right
+sub  %r15, %rax		# %rax = %rax - %r15	//%rax=right-base
+cqto
+movq %rbp,%rcx
+idiv %rcx			# %rax = %rax / %rdx
+mov  %rax, %rsi		# %rsi = %rax			//%rsi=(right-base)/width
+mov  %rbp, %rdx		# %rdx = %rbp			//%rdx=width
+mov  %rbx, %rcx 	# %rcx = %rbx			//%rcx=compar
+mov  %r15, %rdi		# %rdi = %r15			//%rdi=base
 call quick_sort
 
-secondIf:
-	cmpq %r10, %r14		# %r14 - %r10				//right-last
-	jge return
-	movq %r14, %rdi		# %rdi = %r14				//%rdi=*right
-	addq %rbp, %rdi		# %rdi = %rdi + %rbp		//%rdi=right+width
-	movq %r10, %rax		# %rax = %r10				//%rax=*last
-	subq %r14, %rax		# %rax = %rax - %r14		//%rax=last-right
-	movq $0,   %rdx
-	div  %rbp
-	movq %rax, %rsi		# %rsi = %rax				//%rsi=(last-right)/width
-	movq %rbp, %rdx		# %rdx = %rbp				//%rdx=width
-	movq %r13, %rcx		# %rcx = %r13				//%rcx=compar
+second_if:
+	cmp  %r14, %r12		# %r12 - %r14			//right-last
+	jge  return
+	mov  %rbp, %rcx
+	mov  %r12, %rdi		# %rdi = %r12			//%rdi=right
+	add  %rbp, %rdi		# %rdi = %rdi + %rbp	//%rdi=right+width
+	mov  %r14, %rax		# %rax = %r14			//%rax=last
+	sub  %r12, %rax		# %rax = %rax - %r12	//%rax=last-right
+	cqto
+	movq %rbp,%rcx
+	idiv %rcx			# %rax = %rax / %rdx	//%rax=(last-right)/width
+	mov  %rax, %rsi		# %rsi = %rax			//%rsi=(last-right)/width
+	mov  %rbp, %rdx
+	mov  %rbx, %rcx		# %rcx = %rbx			//%rcx=compar
 	call quick_sort
 	
 return:
-	pop  %rbp			# restore previous value in %rbp
-	pop  %r12			# restore previous value in %r12
-	pop  %r13			# restore previous value in %r13
-	pop  %r14			# restore previous value in %r14
-	pop  %r15			# restore previous value in %r15
-	ret
-	
-	
+	pop %rbx
+	pop %rbp
+	pop %r15
+	pop %r14
+	pop %r13
+	pop %r12
+
+
 /*===============memswap=================*/
 
 /**
@@ -126,42 +123,31 @@ return:
 memswap:
 	/*====definir frame pointer=========*/
 	pushq %rbp
-	movq  %rsp,      %rbp
+	movq %rsp,%rbp
 	pushq %r13
 	pushq %r12
 	pushq %rbx
-	
-	mov   %rdi,      %r13
-	mov   %rsi,      %r12
-	mov   %rdx,		 %rbx
-	
-	/*=========colocar o %rsp num endereço multiplo de 16===========*/
-	subq  $8,        %rsp
-	leaq  15(%rdx),  %rax
-	andq  $16,       %rax
-	subq  %rax,      %rsp      #localiza o tmp
-	
-	/*=========memcpy(tmp,one,size)===============*/
-	movq  %rsp,      %rdi      #tmp
-	movq  %r13,		 %rsi	   #one
-	call  memcpy			   #%rdx = size
-	
-	/*=========memcpy(one,other,size)===============*/
-	movq  %r13,		 %rdi
-	movq  %r12,		 %rsi
-	movq  %rbx,		 %rdx
+	movq %rdi,%r13
+	movq %rsi,%r12
+	movq %rdx,%rbx
+	subq $8,%rsp
+	leaq 15(%rdx),%rax
+	andq $16,%rax # possibly negative or positive
+	subq %rax,%rsp
+	movq %rsp,%rdi
+	movq %r13,%rsi
 	call memcpy
-	
-	/*=========memcpy(other,tmp,size)===============*/
-	movq  %r12,		 %rdi
-	movq  %rsp,		 %rsi
-	movq  %rbx,      %rdx
+	movq %r13,%rdi
+	movq %r12,%rsi
+	movq %rbx,%rdx
 	call memcpy
-	
-	/*=========discarta o espaço local, pops e retorna===============*/
-	leaq  -24(%rbp), %rsp
-	popq  %rbx
-	popq  %r12
-	popq  %r13
-	popq  %rbp
+	movq %r12,%rdi
+	movq %rsp,%rsi
+	movq %rbx,%rdx
+	call memcpy
+	leaq -24(%rbp),%rsp
+	popq %rbx
+	popq %r12
+	popq %r13
+	popq %rbp
 	ret
